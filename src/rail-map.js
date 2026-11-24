@@ -170,15 +170,168 @@ export function typeColor(type, theme = 'light') {
   return palette[type] || palette.other;
 }
 
-export function itemColor(item, theme = 'light', colorMode = 'flow') {
-  if (colorMode === 'type' && item && !item.point && item.type) {
-    return typeColor(item.type, theme);
+// Recognizable line colors for corridors that overlap in the big cities.
+// Key is operator|name. Shinkansen are shared across JR companies.
+const LINE_COLORS = {
+  'shinkansen|北海道新幹線': '#5b3fd6',
+  'shinkansen|東北新幹線': '#1f9d55',
+  'shinkansen|上越新幹線': '#c2185b',
+  'shinkansen|北陸新幹線': '#7a1fa2',
+  'shinkansen|東海道新幹線': '#123a9a',
+  'shinkansen|山陽新幹線': '#0e6bb8',
+  'shinkansen|九州新幹線': '#e4572e',
+  'shinkansen|西九州新幹線': '#d97706',
+  '東日本旅客鉄道|山手線': '#6fa314',
+  '東日本旅客鉄道|中央線': '#e23b2a',
+  '東日本旅客鉄道|総武線': '#1f6feb',
+  '東日本旅客鉄道|東海道線': '#e39b08',
+  '東日本旅客鉄道|東北線': '#c45c26',
+  '東日本旅客鉄道|赤羽線': '#0e9f8e',
+  '東日本旅客鉄道|常磐線': '#148f4e',
+  '東日本旅客鉄道|京葉線': '#c01048',
+  '東日本旅客鉄道|南武線': '#d4a017',
+  '東日本旅客鉄道|横浜線': '#8fbf3a',
+  '東日本旅客鉄道|横須賀線': '#0b4fa8',
+  '東日本旅客鉄道|根岸線': '#1493c7',
+  '東日本旅客鉄道|武蔵野線': '#7a4ea3',
+  '東日本旅客鉄道|高崎線': '#e07a3d',
+  '東日本旅客鉄道|青梅線': '#f07a4a',
+  '東日本旅客鉄道|外房線': '#5b7fe0',
+  '東日本旅客鉄道|川越線': '#a3c416',
+  '東海旅客鉄道|東海道線': '#f0b429',
+  '東海旅客鉄道|中央線': '#d9482b',
+  '西日本旅客鉄道|大阪環状線': '#e10600',
+  '西日本旅客鉄道|東海道線': '#f2b544',
+  '西日本旅客鉄道|山陽線': '#1d6fbf',
+  '西日本旅客鉄道|阪和線': '#0f8f6a',
+  '西日本旅客鉄道|JR東西線': '#149aa8',
+  '東京地下鉄|3号線銀座線': '#f08a00',
+  '東京地下鉄|4号線丸ノ内線': '#f62e36',
+  '東京地下鉄|2号線日比谷線': '#6e6e68',
+  '東京地下鉄|5号線東西線': '#009bbf',
+  '東京地下鉄|9号線千代田線': '#00a36a',
+  '東京地下鉄|8号線有楽町線': '#b8963e',
+  '東京地下鉄|11号線半蔵門線': '#7a5bd6',
+  '東京地下鉄|7号線南北線': '#00a99d',
+  '東京地下鉄|13号線副都心線': '#8c4a24',
+  '東京都|1号線浅草線': '#e23b8c',
+  '東京都|6号線三田線': '#1a6fdb',
+  '東京都|10号線新宿線': '#4ea33a',
+  '東京都|12号線大江戸線': '#b0006e',
+  '東急電鉄|東横線': '#d0123a',
+  '東急電鉄|田園都市線': '#128a62',
+  '東急電鉄|大井町線': '#e56a12',
+  '東急電鉄|目黒線': '#0b6e9a',
+  '東急電鉄|東急新横浜線': '#0e8ec4',
+  '小田急電鉄|小田原線・江ノ島線': '#2457c8',
+  '京浜急行電鉄|本線': '#c40018',
+  '京浜急行電鉄|空港線': '#ff5a4d',
+  '京王電鉄|京王線・高尾線・相模原線': '#e21878',
+  '京王電鉄|井の頭線': '#3d2ebf',
+  '京成電鉄|本線': '#0a2f8f',
+  '京成電鉄|押上線': '#4c6ef5',
+  '東武鉄道|東上本線': '#0e4c9a',
+  '東武鉄道|伊勢崎線': '#e88704',
+  '西武鉄道|新宿線・拝島線': '#2f6bff',
+  '西武鉄道|池袋線・西武秩父線': '#c99208',
+  '相模鉄道|本線・いずみ野線': '#1f4e79',
+  '横浜高速鉄道|みなとみらい21線': '#123e9c',
+  '首都圏新都市鉄道|常磐新線': '#6b2c91',
+  '東京臨海高速鉄道|りんかい線': '#1c8cba',
+  '阪急電鉄|京都線・千里線・嵐山線': '#8c1d40',
+  '阪急電鉄|神戸線・宝塚線・伊丹線': '#5c2a4a',
+  '阪神電気鉄道|本線・阪神なんば線': '#e2b007',
+  '京阪電気鉄道|京阪本線・鴨東線・中之島線': '#0e8a4a',
+  '南海電気鉄道|南海本線': '#0088b8',
+  '南海電気鉄道|高野線': '#0a6e8a',
+  '北大阪急行電鉄|南北線': '#1a8f4a',
+  '大阪市高速電気軌道|1号線(御堂筋線)': '#e10600',
+  '大阪市高速電気軌道|6号線(堺筋線)': '#a6843a',
+  '大阪市高速電気軌道|2号線(谷町線)': '#6c2c91',
+  '大阪市高速電気軌道|4号線(中央線)': '#00a040',
+  '大阪市高速電気軌道|3号線(四つ橋線)': '#0072c6',
+  '名古屋市|東山線': '#e0a800',
+  '名古屋市|鶴舞線': '#1a8fd0',
+  '名古屋鉄道|名古屋本線': '#d00020',
+  '京都市|烏丸線': '#00a651',
+  '京都市|東西線': '#e06a00',
+  '札幌市|南北線': '#1a8f4a',
+  '札幌市|東西線': '#e07a14',
+  '福岡市|空港線・箱崎線・七隈線': '#e06a2c',
+};
+
+function hashKey(key) {
+  let h = 2166136261;
+  for (let i = 0; i < key.length; i++) {
+    h ^= key.charCodeAt(i);
+    h = Math.imul(h, 16777619);
   }
-  return flowColor(item?.value, theme);
+  return h >>> 0;
+}
+
+function hslToHex(h, s, l) {
+  const sat = s / 100;
+  const lit = l / 100;
+  const a = sat * Math.min(lit, 1 - lit);
+  const channel = n => {
+    const k = (n + h / 30) % 12;
+    const c = lit - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    return Math.round(255 * c).toString(16).padStart(2, '0');
+  };
+  return '#' + channel(0) + channel(8) + channel(4);
+}
+
+function hexToHsl(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = ((n >> 16) & 255) / 255;
+  const g = ((n >> 8) & 255) / 255;
+  const b = (n & 255) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const lit = (max + min) / 2;
+  if (max === min) return [0, 0, lit * 100];
+  const d = max - min;
+  const sat = lit > 0.5 ? d / (2 - max - min) : d / (max + min);
+  let h = 0;
+  if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+  else if (max === g) h = (b - r) / d + 2;
+  else h = (r - g) / d + 4;
+  return [h * 60, sat * 100, lit * 100];
+}
+
+function colorForTheme(hex, theme) {
+  if (theme !== 'dark') return hex;
+  const [h, s, l] = hexToHsl(hex);
+  return hslToHex(h, Math.min(90, s + 8), Math.max(66, Math.min(76, l + 26)));
+}
+
+export function lineKey(item) {
+  const name = item?.point ? (item.line || item.name) : item?.name;
+  if (typeof name === 'string' && name.includes('新幹線')) return 'shinkansen|' + name;
+  return (item?.operator || '') + '|' + (name || '');
+}
+
+export function lineColor(item, theme = 'light') {
+  const key = lineKey(item);
+  const pinned = LINE_COLORS[key];
+  if (pinned) return colorForTheme(pinned, theme);
+  const h = hashKey(key || 'line');
+  const hue = Math.round((h % 997) * 137.508) % 360;
+  const sat = 64 + (h % 16);
+  const lit = theme === 'dark' ? 66 + (h % 9) : 36 + (h % 10);
+  return hslToHex(hue, sat, lit);
+}
+
+export function itemColor(item, theme = 'light', colorMode = 'line') {
+  if (!item) return flowColor(null, theme);
+  if (item.point || colorMode === 'flow') return flowColor(item.value, theme);
+  if (colorMode === 'type' && item.type) return typeColor(item.type, theme);
+  return lineColor(item, theme);
 }
 
 export function flowWidth(value) {
-  return value == null ? .85 : .92 + 5.35 * Math.sqrt(value / (value + 190000));
+  if (value == null) return 0.7;
+  return 0.55 + 6.35 * Math.sqrt(value / (value + 90000));
 }
 
 export function stationSize(value) {
@@ -277,7 +430,7 @@ export class RailMap {
     this.height = 1;
     this.view = null;
     this.scene = {
-      theme: 'light', colorMode: 'flow', layer: 'lines', language: 'zh',
+      theme: 'light', colorMode: 'line', layer: 'lines', language: 'zh',
       tracks: [], stations: [], stationsForLabels: [],
       selection: null, hoveredItem: null, siblingIds: null, activeBand: null,
     };
@@ -474,7 +627,7 @@ export class RailMap {
 
   drawLines(ctx, view, visible, pal) {
     const zoomWeight = Math.max(.86, Math.min(1.82, 1 + Math.log(Math.max(16, view.scale) / 65) * .17));
-    const { selection: selected, hoveredItem, siblingIds, activeBand, theme, colorMode = 'flow', layer } = this.scene;
+    const { selection: selected, hoveredItem, siblingIds, activeBand, theme, colorMode = 'line', layer } = this.scene;
     const isStations = layer === 'stations';
     const isDark = theme === 'dark';
 

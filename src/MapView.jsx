@@ -24,7 +24,12 @@ function Legend({
   const { t, language } = labels;
   const title = stationMode ? 'stationMetric' : censusMode ? 'censusMetric' : 'routeMetric';
   const isTypeColor = !stationMode && colorMode === 'type';
-  const hint = isTypeColor ? 'typeWidthHint' : (stationMode ? 'stationHint' : censusMode ? 'censusHint' : 'routeHint');
+  const isLineColor = !stationMode && colorMode !== 'type';
+  const hint = isTypeColor
+    ? 'typeWidthHint'
+    : isLineColor
+      ? (censusMode ? 'censusLineHint' : 'lineWidthHint')
+      : (stationMode ? 'stationHint' : 'routeHint');
   const bands = language === 'en'
     ? ['<1k', '1k', '3k', '10k', '30k', '100k', '300k+']
     : ['<1千', '1千', '3千', '1万', '3万', '10万', '30万+'];
@@ -53,7 +58,7 @@ function Legend({
           )}
           {!stationMode && (
             <div className="inline-flex rounded-[5px] border border-[#1e2022]/80 dark:border-[#454d5e] bg-[#f3f0e8] dark:bg-[#111317] p-0.5">
-              {['flow', 'type'].map(mode => {
+              {['line', 'type'].map(mode => {
                 const active = colorMode === mode;
                 return (
                   <button
@@ -67,7 +72,7 @@ function Legend({
                         : 'text-zinc-600 dark:text-slate-400 hover:text-zinc-900 dark:hover:text-white'
                     }`}
                   >
-                    {t(mode === 'flow' ? 'colorByFlow' : 'colorByType')}
+                    {t(mode === 'line' ? 'colorByLine' : 'colorByType')}
                   </button>
                 );
               })}
@@ -106,7 +111,7 @@ function Legend({
         <div className="flex items-end flex-wrap gap-1">
           {[350, ...limits].map((sample, index) => {
             const size = stationMode ? stationSize(sample) * .68 : flowWidth(sample);
-            const color = flowColor(sample, theme);
+            const color = isLineColor ? (theme === 'dark' ? '#e7e5e4' : '#1e2022') : flowColor(sample, theme);
             const isSelected = lockedBand === index;
             const isDimmed = lockedBand !== null && !isSelected;
             return (

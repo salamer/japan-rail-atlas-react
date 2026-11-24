@@ -4,7 +4,7 @@ import {
   CATEGORIES, CATEGORY_BADGE, CATEGORY_DOT, isCensus, kindOf, measureOf, readingInView, scopeOf, YEARS,
 } from './data.js';
 import { sources } from './locales.js';
-import { flowColor, itemColor, limits } from './rail-map.js';
+import { flowColor, itemColor, lineColor, limits } from './rail-map.js';
 
 const BAND_LABELS_ZH = ['<1千', '1千–3千', '3千–1万', '1万–3万', '3万–10万', '10万–30万', '30万+'];
 const BAND_LABELS_EN = ['<1k', '1k–3k', '3k–10k', '10k–30k', '30k–100k', '100k–300k', '300k+'];
@@ -92,7 +92,7 @@ function HistoryChart({ item, selectedYear, theme, labels, onSelectYear }) {
           const isCurrent = selectedYear === year;
           const isHovered = hoverIdx === index;
           const fill = isCurrent
-            ? flowColor(value, theme)
+            ? (item.point ? flowColor(value, theme) : lineColor(item, theme))
             : isHovered
               ? '#ffd25a'
               : (theme === 'dark' ? '#2c3342' : '#e2ddd1');
@@ -210,7 +210,7 @@ function SiblingBreakdown({ siblings, item, station, view, theme, labels, onSele
               <div className="h-1.5 w-full rounded-[2px] bg-[#ebe6da] dark:bg-slate-800 overflow-hidden">
                 <div
                   className="h-full rounded-[2px] transition-all duration-300"
-                  style={{ width: `${pct}%`, backgroundColor: flowColor(value, theme) }}
+                  style={{ width: `${pct}%`, backgroundColor: lineColor(sib, theme) }}
                 />
               </div>
             </button>
@@ -462,7 +462,7 @@ function Results({
                       title={`${bandLabels[idx]}: ${number(bCount)}`}
                       onMouseEnter={() => onPreviewBand?.(idx)}
                       onMouseLeave={() => onPreviewBand?.(null)}
-                      onClick={() => onFilter({ band: isLocked ? null : idx, colorMode: 'flow' })}
+                      onClick={() => onFilter({ band: isLocked ? null : idx })}
                       style={{
                         width: `${Math.max(3, share)}%`,
                         backgroundColor: flowColor(BAND_SAMPLES[idx], theme),

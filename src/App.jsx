@@ -16,7 +16,7 @@ const initialView = {
   region: 'nation',
   layer: 'lines',
   mode: 'national',
-  colorMode: 'flow',
+  colorMode: 'line',
   category: 'all',
   operator: null,
   band: null,
